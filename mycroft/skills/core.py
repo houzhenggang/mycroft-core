@@ -25,7 +25,6 @@ import re
 from adapt.intent import Intent
 from os.path import join, dirname, splitext, isdir
 
-from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
 from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess
@@ -169,7 +168,6 @@ class MycroftSkill(object):
     def bind(self, emitter):
         if emitter:
             self.emitter = emitter
-            self.enclosure = EnclosureAPI(emitter)
             self.__register_stop()
 
     def __register_stop(self):

@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-import time
 import xml.etree.ElementTree as ET
 
 import requests
@@ -45,16 +44,7 @@ class StockSkill(MycroftSkill):
         company = message.data.get("Company")
         try:
             response = self.find_and_query(company)
-            self.emitter.once("recognizer_loop:audio_output_start",
-                              self.enclosure.mouth_text(
-                                  response['symbol'] + ": " + response[
-                                      'price']))
-            self.enclosure.deactivate_mouth_events()
             self.speak_dialog("stock.price", data=response)
-            time.sleep(12)
-            self.enclosure.activate_mouth_events()
-            self.enclosure.mouth_reset()
-
         except:
             self.speak_dialog("not.found", data={'company': company})
 

@@ -15,15 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from StringIO import StringIO
-
 import re
 import wolframalpha
 from os.path import dirname, join
-from requests import HTTPError
 
-from mycroft.api import Api
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
 
@@ -71,18 +66,6 @@ class EnglishQuestionParser(object):
         return None
 
 
-class WAApi(Api):
-    def __init__(self):
-        super(WAApi, self).__init__("wa")
-
-    def get_data(self, response):
-        return response
-
-    def query(self, input):
-        data = self.request({"query": {"input": input}})
-        return wolframalpha.Result(StringIO(data.content))
-
-
 class WolframAlphaSkill(MycroftSkill):
     PIDS = ['Value', 'NotableFacts:PeopleData', 'BasicInformation:PeopleData',
             'Definition', 'DecimalApproximation']
@@ -94,10 +77,7 @@ class WolframAlphaSkill(MycroftSkill):
 
     def __init_client(self):
         key = self.config.get('api_key')
-        if key and not self.config.get('proxy'):
-            self.client = wolframalpha.Client(key)
-        else:
-            self.client = WAApi()
+        self.client = wolframalpha.Client(key)
 
     def initialize(self):
         self.init_dialog(dirname(__file__))
@@ -122,7 +102,6 @@ class WolframAlphaSkill(MycroftSkill):
 
     # TODO: Localization
     def handle_fallback(self, message):
-        self.enclosure.mouth_think()
         LOG.debug(
             "Could not determine intent, falling back to WolframAlpha Skill!")
         utterance = message.data.get('utterance')
@@ -146,11 +125,6 @@ class WolframAlphaSkill(MycroftSkill):
             res = self.client.query(query)
             result = self.get_result(res)
             others = self._find_did_you_mean(res)
-        except HTTPError as e:
-            if e.response.status_code == 401:
-                LOG.warn("Access Denied at mycroft.ai")
-                self.speak_dialog('not.paired')
-            return
         except Exception as e:
             LOG.exception(e)
             self.speak_dialog("not.understood", data={'phrase': phrase})

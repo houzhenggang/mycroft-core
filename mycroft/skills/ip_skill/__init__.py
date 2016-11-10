@@ -17,10 +17,8 @@
 
 
 from os.path import dirname, join
-import re
-import time
 
-from netifaces import interfaces, ifaddresses, AF_INET
+import subprocess
 
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
@@ -44,29 +42,15 @@ class IPSkill(MycroftSkill):
         intent = IntentBuilder("IPIntent").require("IPCommand").build()
         self.register_intent(intent, self.handle_intent)
 
+    @staticmethod
+    def get_ip(iface):
+        command = "ifconfig %s | sed -n 's/.*inet addr:\\([0-9.]*\\).*/\\1/p'" % iface
+        line = subprocess.check_output(command, shell=True)
+        return line[:-1]
+
     def handle_intent(self, message):
-        self.speak("Here are my available I.P. addresses.")
-        self.enclosure.deactivate_mouth_events()
-        for ifaceName in interfaces():
-            addresses = [
-                i['addr'] for i in
-                ifaddresses(ifaceName).setdefault(
-                    AF_INET, [{'addr': None}])]
-            if None in addresses:
-                addresses.remove(None)
-            if addresses and ifaceName != "lo":
-                updated_addresses = [re.sub(r"\.", r" dot ", address)
-                                     for address in addresses]
-                logger.debug(addresses[0])
-                self.speak('%s: %s' % (
-                    "interface: " + ifaceName +
-                    ", I.P. Address ", ', '.join(updated_addresses)))
-                for address in addresses:
-                    self.enclosure.mouth_text(address)
-                    time.sleep((self.LETTERS_PER_SCREEN + len(address)) *
-                               self.SEC_PER_LETTER)
-        self.enclosure.activate_mouth_events()
-        self.speak("Those are all my I.P. addresses.")
+        address = self.get_ip('apcli0') 
+        self.speak("My I.P. address is %s." % address)
 
     def stop(self):
         pass
