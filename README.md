@@ -21,4 +21,4 @@ Running Mycroft AI on ReSpeaker.
 
 4. get bing speech api key from [microsoft congnitive services](https://www.microsoft.com/cognitive-services/en-us/speech-api)
 5. rename `mycroft-core/example_creds.py` to `mycroft-core/creds.py` and fill in `BING_KEY`
-6. `python mycroft_on_respeaker.py`
+6. `. respeaker_virtualenv/bin/activate && python mycroft_on_respeaker.py`
