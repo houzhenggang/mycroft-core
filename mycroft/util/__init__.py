@@ -22,7 +22,7 @@ import tempfile
 
 import os
 import os.path
-import psutil
+#import psutil
 from os.path import dirname
 
 __author__ = 'jdorleans'

@@ -2,15 +2,17 @@ import sys
 import time
 from threading import Thread, Event
 import logging
+import pkg_resources
 
 from respeaker import Microphone, Player
 from respeaker.bing_speech_api import BingSpeechAPI
 
-from mycroft.messagebus.bus import bus as client
 from mycroft.messagebus.message import Message
 from mycroft.session import SessionManager
+from mycroft.skills.core import load_skills as load_mycroft_skills
 
-from mycroft.skills.core import load_skills
+from mycroft.messagebus.bus import bus
+
 
 logger = logging.getLogger(__file__)
 
@@ -21,6 +23,41 @@ except ImportError:
     print(
         'Get a key from https://www.microsoft.com/cognitive-services/en-us/speech-api and create creds.py with the key')
     sys.exit(-1)
+
+
+def load_extension_skills(bus):
+    """Find all installed skills.
+
+    :returns: list of installed skills
+    """
+
+    installed_skills = []
+
+    for entry_point in pkg_resources.iter_entry_points('hallo.skill'):
+        logger.debug('Loading entry point: %s', entry_point)
+        try:
+            skill_create_function = entry_point.load(require=False)
+        except Exception as e:
+            logger.exception("Failed to load skill %s: %s" % (
+                entry_point.name, e))
+            continue
+
+        try:
+            skill = skill_create_function()
+            skill.bind(bus)
+            skill.initialize()
+        except Exception:
+            logger.exception('Setup of skill from entry point %s failed, '
+                             'ignoring extension.', entry_point.name)
+            continue
+
+        installed_skills.append(skill)
+
+        logger.debug(
+            'Loaded skill: %s %s', skill.name, skill.version)
+
+    names = (skill.name for skill in installed_skills)
+    logger.debug('Discovered skill: %s', ', '.join(names))
 
 
 def task(quit_event):
@@ -45,13 +82,14 @@ def task(quit_event):
         logger.info("Failed to find intent on multiple intents.")
         speak("Sorry, I didn't catch that. Please rephrase your request.")
 
-    client.on('speak', handle_speak)
-    client.on(
+    bus.on('speak', handle_speak)
+    bus.on(
         'multi_utterance_intent_failure',
         handle_multi_utterance_intent_failure
     )
 
-    load_skills(client)
+    load_mycroft_skills(bus)
+    load_extension_skills(bus)
 
     while not quit_event.is_set():
         if mic.wakeup(keyword='respeaker'):
@@ -71,12 +109,12 @@ def task(quit_event):
                 }
 
                 print('Bing:' + text.encode('utf-8'))
-                client.emit(Message('recognizer_loop:utterance', payload))
+                bus.emit(Message('recognizer_loop:utterance', payload))
                 # tts_data = bing.synthesize('you said ' + text)
                 # player.play_raw(tts_data)
 
     mic.close()
-    client.emit(Message('mycroft.stop'))
+    bus.emit(Message('mycroft.stop'))
 
 
 def main():
