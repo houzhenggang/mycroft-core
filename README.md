@@ -16,9 +16,11 @@ Running Mycroft AI on ReSpeaker.
 
   ```
   git clone https://github.com/respeaker/respeaker_virtualenv.git
-  git clone https://github.com/respeaker/mycroft-core.git
+  git clone --depth=2 https://github.com/respeaker/mycroft-core.git
   ```
 
 4. get bing speech api key from [microsoft congnitive services](https://www.microsoft.com/cognitive-services/en-us/speech-api)
 5. rename `mycroft-core/example_creds.py` to `mycroft-core/creds.py` and fill in `BING_KEY`
-6. `. respeaker_virtualenv/bin/activate && python mycroft_on_respeaker.py`
+6. `/etc/init.d/mopidy stop`
+7. `cp -r respeaker_virtualenv/ /root/env`
+8. `. /root/env/bin/activate && python mycroft_on_respeaker.py`
